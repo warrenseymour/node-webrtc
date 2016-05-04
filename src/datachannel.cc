@@ -48,6 +48,14 @@ void DataChannelObserver::OnMessage(const webrtc::DataBuffer& buffer) {
   TRACE_END;
 }
 
+void DataChannelObserver::OnBufferedAmountChange(uint64_t previous_amount) {
+  TRACE_CALL;
+  if (_jingleDataChannel->buffered_amount() < 128 * 1024) {
+    QueueEvent(DataChannel::BUFFERED_AMOUNT_LOW, static_cast<void*>(nullptr));
+  }
+  TRACE_END;
+}
+
 void DataChannelObserver::QueueEvent(DataChannel::AsyncEventType type, void* data) {
   TRACE_CALL;
   DataChannel::AsyncEvent evt;
@@ -198,6 +206,10 @@ void DataChannel::Run(uv_async_t* handle, int status) {
         argv[0] = str;
         Nan::MakeCallback(dc, callback, 1, argv);
       }
+    } else if (DataChannel::BUFFERED_AMOUNT_LOW & evt.type) {
+      Local<Function> callback = Local<Function>::Cast(dc->Get(Nan::New("onbufferedamountlow").ToLocalChecked()));
+      Local<Value> argv[0];
+      Nan::MakeCallback(dc, callback, 0, argv);
     }
   }
 
@@ -221,6 +233,14 @@ void DataChannel::OnMessage(const webrtc::DataBuffer& buffer) {
   TRACE_CALL;
   MessageEvent* data = new MessageEvent(&buffer);
   QueueEvent(DataChannel::MESSAGE, static_cast<void*>(data));
+  TRACE_END;
+}
+
+void DataChannel::OnBufferedAmountChange(uint64_t previous_amount) {
+  TRACE_CALL;
+  if (_jingleDataChannel->buffered_amount() < 128 * 1024) {
+    QueueEvent(DataChannel::BUFFERED_AMOUNT_LOW, static_cast<void*>(nullptr));
+  }
   TRACE_END;
 }
 
@@ -303,6 +323,24 @@ NAN_GETTER(DataChannel::GetBufferedAmount) {
   info.GetReturnValue().Set(Nan::New<Number>(buffered_amount));
 }
 
+NAN_GETTER(DataChannel::GetBufferedAmountLowThreshold) {
+  TRACE_CALL;
+
+  DataChannel* self = Nan::ObjectWrap::Unwrap<DataChannel>(info.Holder());
+
+  TRACE_END;
+  info.GetReturnValue().Set(Nan::New<Number>(self->_bufferedAmountLowThreshold));
+}
+
+NAN_SETTER(DataChannel::SetBufferedAmountLowThreshold) {
+  TRACE_CALL;
+
+  DataChannel* self = Nan::ObjectWrap::Unwrap<DataChannel>(info.Holder());
+  self->_bufferedAmountLowThreshold = static_cast<uint64_t>(value->Uint32Value());
+
+  TRACE_END;
+}
+
 NAN_GETTER(DataChannel::GetLabel) {
   TRACE_CALL;
 
@@ -360,6 +398,7 @@ void DataChannel::Init(Handle<Object> exports) {
     Nan::New<FunctionTemplate>(Send)->GetFunction());
 
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("bufferedAmount").ToLocalChecked(), GetBufferedAmount, ReadOnly);
+  Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("bufferedAmountLowThreshold").ToLocalChecked(), GetBufferedAmountLowThreshold, SetBufferedAmountLowThreshold);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("label").ToLocalChecked(), GetLabel, ReadOnly);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("binaryType").ToLocalChecked(), GetBinaryType, SetBinaryType);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("readyState").ToLocalChecked(), GetReadyState, ReadOnly);

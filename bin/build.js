@@ -10,7 +10,8 @@
 
   var PROJECT_DIR = process.cwd();
   var DEPOT_TOOLS_REPO = 'https://chromium.googlesource.com/chromium/tools/depot_tools.git';
-  var LIB_WEBRTC_REPO = 'https://github.com/js-platform/libwebrtc.git';
+  var LIB_WEBRTC_REPO = 'https://github.com/warrenseymour/libwebrtc.git';
+  var LIB_WEBRTC_BRANCH = 'onbufferedamountlow';
   var LIB_DIR = PROJECT_DIR + '/third_party';
   var DEPOT_TOOLS_DIR = LIB_DIR + '/depot_tools';
   var LIB_WEBRTC_DIR = LIB_DIR + '/libwebrtc';
@@ -107,14 +108,14 @@
     if(!fs.existsSync(LIB_WEBRTC_DIR)) {
       console.log(': Cloning libwebrtc ... ');
       spawn_log('git',
-        ['clone', '--depth', '1', '-v', '--progress', LIB_WEBRTC_REPO],
+        ['clone', '--depth', '1', '-v', '--progress', LIB_WEBRTC_REPO, '-b', LIB_WEBRTC_BRANCH],
         {'cwd': LIB_DIR},
         next
       );
     } else {
       console.log(': Updating libwebrtc ... ');
       spawn_log('git',
-        ['pull', 'origin', 'master'],
+        ['pull', 'origin', LIB_WEBRTC_BRANCH],
         {'cwd': LIB_WEBRTC_DIR},
         next
       );

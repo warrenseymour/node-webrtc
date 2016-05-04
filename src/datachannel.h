@@ -55,6 +55,7 @@ class DataChannel
     MESSAGE = 0x1 << 0,  // 1
     ERROR = 0x1 << 1,  // 2
     STATE = 0x1 << 2,  // 4
+    BUFFERED_AMOUNT_LOW = 0x1 << 3,  // 8
   };
 
   enum BinaryType {
@@ -71,6 +72,7 @@ class DataChannel
 
   virtual void OnStateChange();
   virtual void OnMessage(const webrtc::DataBuffer& buffer);
+  virtual void OnBufferedAmountChange(uint64_t previous_amount);
 
   //
   // Nodejs wrapping.
@@ -84,6 +86,8 @@ class DataChannel
   static NAN_METHOD(Shutdown);
 
   static NAN_GETTER(GetBufferedAmount);
+  static NAN_GETTER(GetBufferedAmountLowThreshold);
+  static NAN_SETTER(SetBufferedAmountLowThreshold);
   static NAN_GETTER(GetLabel);
   static NAN_GETTER(GetBinaryType);
   static NAN_GETTER(GetReadyState);
@@ -107,6 +111,7 @@ class DataChannel
 
   rtc::scoped_refptr<webrtc::DataChannelInterface> _jingleDataChannel;
   BinaryType _binaryType;
+  uint64_t _bufferedAmountLowThreshold;
 
 #if NODE_MODULE_VERSION < 0x000C
   static Nan::Persistent<v8::Function> ArrayBufferConstructor;
@@ -122,6 +127,7 @@ class DataChannelObserver
 
   virtual void OnStateChange();
   virtual void OnMessage(const webrtc::DataBuffer& buffer);
+  virtual void OnBufferedAmountChange(uint64_t previous_amount);
   void QueueEvent(DataChannel::AsyncEventType type, void* data);
 
   uv_mutex_t lock;
